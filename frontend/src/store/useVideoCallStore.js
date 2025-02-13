@@ -1,63 +1,97 @@
 import { create } from "zustand";
-import toast from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
 
 export const useVideoCallStore = create((set, get) => ({
   isCalling: false,
-  isReceivingCall: false,
-  callData: null,
-  selectedUser: null,
+  incomingCall: null,
+  callAccepted: false,
+  myStream: null,
+  peerConnection: null,
 
-  initiateCall: async (userId) => {
-    if (get().isCalling) return; 
+  startCall: async (receiverId) => {
     set({ isCalling: true });
-    try {
-      const res = await axiosInstance.post(`/videocall/initiate/${userId}`);
-      set({ callData: res.data });
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Error in starting call");
-    } finally {
-      set({ isCalling: false });
-    }
-  },
-  
 
-  acceptCall: async (userId) => {
     try {
-      const res = await axiosInstance.post(`/videocall/accept/${userId}`);
-      set({ callData: res.data, isReceivingCall: false });
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Error when accepting call");
-    }
-  },
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      set({ myStream: stream });
 
-  endCall: async (userId) => {
-    try {
-      await axiosInstance.post(`/videocall/end/${userId}`);
-      set({ callData: null });
+      const peer = new RTCPeerConnection();
+      set({ peerConnection: peer });
+
+      stream.getTracks().forEach((track) => peer.addTrack(track, stream));
+
+      peer.onicecandidate = async (event) => {
+        if (event.candidate) {
+          await axiosInstance.post(`/videocall/initiate/${receiverId}`, {
+            signalData: event.candidate,
+          });
+        }
+      };
+
+      await axiosInstance.post(`/videocall/initiate/${receiverId}`);
+
+      window.open("/call", "_blank", "width=800,height=600");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Error when ending call");
+      console.error("Lỗi khi bắt đầu cuộc gọi:", error);
     }
   },
 
-  subscribeToCallEvents: () => {
-    const socket = useAuthStore.getState().socket;
-
-    socket.on("incomingCall", (callInfo) => {
-      set({ callData: callInfo, isReceivingCall: true });
-    });
-
-    socket.on("callEnded", () => {
-      set({ callData: null, isReceivingCall: false });
-    });
+  receiveCall: (callerId, signal) => {
+    set({ incomingCall: { callerId, signal } });
   },
 
-  unsubscribeFromCallEvents: () => {
-    const socket = useAuthStore.getState().socket;
-    socket.off("incomingCall");
-    socket.off("callEnded");
+  acceptCall: async () => {
+    const { incomingCall } = get();
+    if (!incomingCall) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      set({ myStream: stream });
+
+      const peer = new RTCPeerConnection();
+      set({ peerConnection: peer });
+
+      stream.getTracks().forEach((track) => peer.addTrack(track, stream));
+
+      peer.onicecandidate = async (event) => {
+        if (event.candidate) {
+          await axiosInstance.post(`/videocall/accept/${incomingCall.callerId}`, {
+            signal: event.candidate,
+          });
+        }
+      };
+
+      set({ callAccepted: true });
+    } catch (error) {
+      console.error("Lỗi khi chấp nhận cuộc gọi:", error);
+    }
   },
 
-  setSelectedUser: (selectedUser) => set({ selectedUser }),
+  endCall: async () => {
+    const { peerConnection, myStream, incomingCall } = get();
+    const authUser = useAuthStore.getState().user;
+
+    try {
+      if (peerConnection) {
+        peerConnection.close();
+        set({ peerConnection: null });
+      }
+
+      if (myStream) {
+        myStream.getTracks().forEach((track) => track.stop());
+        set({ myStream: null });
+      }
+
+      set({ isCalling: false, callAccepted: false, incomingCall: null });
+
+      // Gửi yêu cầu kết thúc cuộc gọi đến backend
+      const callId = incomingCall?.callerId || authUser?._id;
+      if (callId) {
+        await axiosInstance.post(`/videocall/end/${callId}`);
+      }
+    } catch (error) {
+      console.error("Lỗi khi kết thúc cuộc gọi:", error);
+    }
+  },
 }));
