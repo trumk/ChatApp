@@ -11,12 +11,11 @@ const io = new Server(server, {
   },
 });
 
+const userSocketMap = {}; // Lưu danh sách user online
+
 export function getReceiverSocketId(userId) {
   return userSocketMap[userId];
 }
-
-// used to store online users
-const userSocketMap = {}; // {userId: socketId}
 
 io.on("connection", (socket) => {
   console.log("A user connected", socket.id);
@@ -24,8 +23,29 @@ io.on("connection", (socket) => {
   const userId = socket.handshake.query.userId;
   if (userId) userSocketMap[userId] = socket.id;
 
-  // io.emit() is used to send events to all the connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
+  // Xử lý tín hiệu WebRTC
+  socket.on("offer", ({ targetUserId, offer }) => {
+    const targetSocketId = userSocketMap[targetUserId];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("offer", { senderId: userId, offer });
+    }
+  });
+
+  socket.on("answer", ({ targetUserId, answer }) => {
+    const targetSocketId = userSocketMap[targetUserId];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("answer", { senderId: userId, answer });
+    }
+  });
+
+  socket.on("ice-candidate", ({ targetUserId, candidate }) => {
+    const targetSocketId = userSocketMap[targetUserId];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("ice-candidate", { senderId: userId, candidate });
+    }
+  });
 
   socket.on("disconnect", () => {
     console.log("A user disconnected", socket.id);
