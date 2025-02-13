@@ -5,17 +5,24 @@ export const initiateCall = (req, res) => {
     const { receiverId, signalData } = req.body;
     const senderId = req.user._id;
 
+    console.log(`📞 Initiating call from ${senderId} to ${receiverId}`);
+
     const receiverSocketId = getReceiverSocketId(receiverId);
+    console.log(`🔍 Receiver Socket ID: ${receiverSocketId}`);
+
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("incomingCall", {
         from: senderId,
         signal: signalData,
       });
+      console.log("✅ Incoming call event sent!");
+    } else {
+      console.log("⚠️ Receiver is not online or socket ID is missing.");
     }
 
     res.status(200).json({ success: true, message: "Call initiated" });
   } catch (error) {
-    console.error("Error in initiateCall:", error.message);
+    console.error("❌ Error in initiateCall:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };

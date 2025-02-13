@@ -7,10 +7,12 @@ export const setupSocketEvents = () => {
   if (!socket) return;
 
   socket.on("incomingCall", ({ from, signal }) => {
+    console.log("Nhận cuộc gọi từ:", from, "Signal:", signal);
     useVideoCallStore.setState({ incomingCall: { callerId: from, signal } });
   });
 
   socket.on("callAccepted", ({ signal }) => {
+    console.log("Cuộc gọi được chấp nhận:", signal);
     const peer = useVideoCallStore.getState().peerConnection;
     if (peer) {
       peer.setRemoteDescription(new RTCSessionDescription(signal));
@@ -19,6 +21,14 @@ export const setupSocketEvents = () => {
   });
 
   socket.on("callEnded", () => {
+    console.log("Cuộc gọi đã kết thúc");
     useVideoCallStore.getState().endCall();
   });
+
+  socket.on("ice-candidate", ({ candidate }) => {
+    const peer = useVideoCallStore.getState().peerConnection;
+    if (peer) {
+      peer.addIceCandidate(new RTCIceCandidate(candidate));
+    }
+  });  
 };

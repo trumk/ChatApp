@@ -4,8 +4,8 @@ import { initiateCall, acceptCall, endCall } from "../controllers/videoCall.cont
 
 const router = express.Router();
 
-router.post("/initiate/:id", protectRoute, initiateCall);
-router.post("/accept/:id", protectRoute, acceptCall);
-router.post("/end/:id", protectRoute, endCall);
+router.post("/initiate", protectRoute, initiateCall);
+router.post("/accept", protectRoute, acceptCall);
+router.post("/end", protectRoute, endCall);
 
 export default router;
