@@ -1,5 +1,5 @@
 import { useChatStore } from "../store/useChatStore";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
@@ -18,6 +18,9 @@ const ChatContainer = () => {
   } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
+
+  // State để quản lý ảnh được chọn
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     getMessages(selectedUser._id);
@@ -76,7 +79,8 @@ const ChatContainer = () => {
                 <img
                   src={message.image}
                   alt="Attachment"
-                  className="sm:max-w-[200px] rounded-md mb-2"
+                  className="sm:max-w-[200px] rounded-md mb-2 cursor-pointer"
+                  onClick={() => setSelectedImage(message.image)}
                 />
               )}
               {message.text && <p>{message.text}</p>}
@@ -86,7 +90,25 @@ const ChatContainer = () => {
       </div>
 
       <MessageInput />
+
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative">
+            <img src={selectedImage} alt="Preview" className="max-w-[90vw] max-h-[90vh] rounded-md" />
+            <button
+              className="absolute top-2 right-2 bg-white text-black rounded-full px-3 py-1 text-lg"
+              onClick={() => setSelectedImage(null)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
 export default ChatContainer;
