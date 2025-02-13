@@ -1,10 +1,15 @@
-import { X } from "lucide-react";
+import { X, Video } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser } = useChatStore();
   const { onlineUsers } = useAuthStore();
+
+  const startVideoCall = () => {
+    console.log("Starting video call with", selectedUser.fullName);
+    // Sau này sẽ thêm logic mở cửa sổ call
+  };
 
   return (
     <div className="p-2.5 border-b border-base-300">
@@ -26,12 +31,21 @@ const ChatHeader = () => {
           </div>
         </div>
 
-        {/* Close button */}
-        <button onClick={() => setSelectedUser(null)}>
-          <X />
-        </button>
+        {/* Video Call & Close Button */}
+        <div className="flex items-center gap-2">
+          {/* Nút Video Call */}
+          <button onClick={startVideoCall} className="hover:text-blue-500">
+            <Video />
+          </button>
+
+          {/* Nút Đóng Chat */}
+          <button onClick={() => setSelectedUser(null)} className="hover:text-red-500">
+            <X />
+          </button>
+        </div>
       </div>
     </div>
   );
 };
+
 export default ChatHeader;
