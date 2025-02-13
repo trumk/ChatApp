@@ -10,13 +10,13 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
 import { useThemeStore } from "./store/useThemeStore";
 import { useEffect } from "react";
-import { setupSocketEvents } from "./store/socketEvents"; // Import sự kiện WebRTC
+import { setupSocketEvents } from "./store/socketEvents";
 
 import { Loader } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 
 const App = () => {
-  const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
+  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
   const { theme } = useThemeStore();
 
   useEffect(() => {
@@ -25,7 +25,7 @@ const App = () => {
 
   useEffect(() => {
     if (authUser) {
-      setupSocketEvents(); // Kích hoạt sự kiện WebRTC khi user đã đăng nhập
+      setupSocketEvents();
     }
   }, [authUser]);
 
