@@ -7,7 +7,7 @@ const Navbar = () => {
   const { logout, authUser } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [setIsSettingsOpen] = useState(false);
 
   const handleSettingsClick = () => {
     if (location.pathname === "/settings") {
